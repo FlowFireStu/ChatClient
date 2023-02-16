@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,7 +17,9 @@ SOURCES += \
     main.cpp \
     loginwidget.cpp \
     mainwidget.cpp \
+    messagedatamanager.cpp \
     notice.cpp \
+    selfinformation.cpp \
     tcpsocketmanager.cpp
 
 HEADERS += \
@@ -28,7 +30,9 @@ HEADERS += \
     createdialog.h \
     loginwidget.h \
     mainwidget.h \
+    messagedatamanager.h \
     notice.h \
+    selfinformation.h \
     tcpsocketmanager.h
 
 FORMS += \

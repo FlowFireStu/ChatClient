@@ -4,6 +4,8 @@
 #include <QWidget>
 #include "accountitem.h"
 #include "chatwidget.h"
+#include "selfinformation.h"
+#include "messagedatamanager.h"
 #include "tcpsocketmanager.h"
 #include <QVBoxLayout>
 #include <QMap>
@@ -15,11 +17,13 @@ class MainWidget;
 class MainWidget : public QWidget
 {
     Q_OBJECT
+    SelfInformation* m_self;
+    MessageDataManager* m_messageManager;
     TcpSocketManager* m_socketManager;
     QVBoxLayout* m_friendListLayout;
 
-    QString m_selfId;
-    int friendCount;
+    int m_friendCount;
+    int m_friendListCount;
     QMap<QString, AccountItem*> m_itemMap;
     QMap<QString, ChatWidget*> m_chatMap;
 public:
@@ -33,7 +37,9 @@ private:
     void initFriendList(const QJsonArray& arr);
     void openChatWidget(const QString& id, const QString& name);
     void showAddFriendDialog();
-    void addFriendItem(QJsonObject infomation);
+    void addFriend(QJsonObject infomation);
+    void receiveMessage();
+    AccountItem* insertFriendItem(const QString& id, const QString& name);
 };
 
 #endif // MAINWIDGET_H

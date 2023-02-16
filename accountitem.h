@@ -12,21 +12,23 @@ class AccountItem : public QWidget
     Q_OBJECT
 
     QString m_id;
+    QString m_name;
+    int m_count;
 public:
     explicit AccountItem(QWidget *parent = nullptr);
     ~AccountItem();
 
-    void setName(const QString& name);
-    void setCount(int count);
-
     QString id() const;
     void setId(const QString &newId);
+    QString name() const;
+    void setName(const QString& name);
+    int count() const;
+    void setCount(int count);
+    void update();
 
     void enterEvent(QEnterEvent* e) override;
     void mouseDoubleClickEvent(QMouseEvent* e) override;
     void leaveEvent(QEvent* e) override;
-
-    void setColor(const QColor& color);
 
 private:
     Ui::AccountItem *ui;

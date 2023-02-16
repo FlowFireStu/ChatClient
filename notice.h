@@ -30,7 +30,7 @@ signals:
     void loginResponse();
     void createResponse();
     void addFriendResponse();
-
+    void receiveMessageRequest();
 
 };
 

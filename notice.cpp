@@ -39,7 +39,9 @@ void Notice::notify(const QJsonObject &head)
 
 void Notice::requestNotify(const QString &requestType)
 {
-
+    if (requestType == "Message") {
+        emit receiveMessageRequest();
+    }
 }
 
 void Notice::responseNotify(const QString &responseType)
