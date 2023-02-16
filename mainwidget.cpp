@@ -60,24 +60,24 @@ void MainWidget::initFriendList(const QJsonArray& arr)
 
 void MainWidget::openChatWidget(const QString &id, const QString &name)
 {
+    ChatWidget* widget;
     if (m_chatMap.contains(id))
     {
-        ChatWidget* widget = m_chatMap.value(id);
-        widget->show();
+        widget = m_chatMap.value(id);
     }
     else
     {
-        ChatWidget* widget = new ChatWidget(id, name);
-        widget->setAttribute(Qt::WA_DeleteOnClose);
-        widget->show();
-
-        AccountItem* item = m_itemMap.value(id);
-        item->setCount(0);
+        widget = new ChatWidget(id, name);
         m_chatMap.insert(id, widget);
+
         connect(widget, &ChatWidget::destroyed, this, [=](){
             m_chatMap.remove(id);
         });
     }
+
+    widget->show();
+    AccountItem* item = m_itemMap.value(id);
+    item->setCount(0);
 }
 
 void MainWidget::showAddFriendDialog()
@@ -112,6 +112,13 @@ void MainWidget::receiveMessage()
     if (!widget)
     {
         m_messageManager->addMessage(fromId, messageBody);
+        item->setCount(item->count() + 1);
+        m_friendListLayout->removeWidget(item);
+        m_friendListLayout->insertWidget(0, item);
+        return;
+    }
+    if (widget->isHidden())
+    {
         item->setCount(item->count() + 1);
         m_friendListLayout->removeWidget(item);
         m_friendListLayout->insertWidget(0, item);

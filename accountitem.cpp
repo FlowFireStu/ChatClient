@@ -73,7 +73,6 @@ void AccountItem::enterEvent(QEnterEvent *e)
 void AccountItem::mouseDoubleClickEvent(QMouseEvent *e)
 {
     emit clicked(m_id, ui->nameLabel->text());
-    setPalette(defaultPal);
 }
 
 void AccountItem::leaveEvent(QEvent *e)

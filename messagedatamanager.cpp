@@ -1,4 +1,5 @@
 #include "messagedatamanager.h"
+#include <QDir>
 #include <QJsonDocument>
 #include <QMessageBox>
 
@@ -20,22 +21,20 @@ MessageDataManager *MessageDataManager::getInstance()
 void MessageDataManager::init(const QString &id)
 {
     m_selfId = id;
+    QDir dir;
+    if (!dir.exists("./data"))
+    {
+        dir.mkdir("./data");
+    }
 
     m_database = QSqlDatabase::addDatabase("QSQLITE", "message");
-    m_database.setUserName(m_selfId);
-    m_database.setPassword("password");
+    m_database.setDatabaseName("./data/" + id + ".db");
     if (!m_database.open())
     {
         QMessageBox::critical(nullptr, "错误", "数据库打开失败");
         return;
     }
-
-    QString createDatabase("create database if not exists " + m_selfId + ";");
-    m_lock.lockForWrite();
-    m_database.exec(createDatabase);
-    m_lock.unlock();
-
-    m_database.setDatabaseName(m_selfId);
+    m_database.close();
 }
 
 int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &message)
@@ -43,11 +42,11 @@ int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &mes
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString addMessageTable("create table if not exists "
-                               + fromId +
-                               "message(id int primary key, "
-                               "messagebody varchar(1000));");
-    QString getId("select id from " + fromId + "message;");
+    QString addMessageTable("create table if not exists \""
+                            + fromId +
+                            "message\"(id int, "
+                            "messagebody varchar(1000));");
+    QString getId("select id from \"" + fromId + "message\";");
 
     m_lock.lockForWrite();
     query.exec(addMessageTable);
@@ -59,7 +58,7 @@ int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &mes
         query.first();
         int id = query.value(0).toInt();
         m_lock.lockForWrite();
-        query.exec("delete from " + fromId + "message where id = " + QString::number(id));
+        query.exec("delete from \"" + fromId + "message\" where id = " + QString::number(id));
         m_lock.unlock();
     }
 
@@ -70,7 +69,7 @@ int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &mes
     }
 
     QString messageStr = QJsonDocument(message).toVariant().toString();
-    QString addMessage("insert into " + fromId + "message values( "
+    QString addMessage("insert into \"" + fromId + "message\" values( "
                        + QString::number(id) + ", \""
                        + messageStr + "\");");
     m_database.open();
@@ -91,7 +90,7 @@ QJsonObject MessageDataManager::readMessage(const QString &fromId, int id)
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString existTable("show tables like " + fromId + "message;");
+    QString existTable("show tables like \"" + fromId + "message\";");
     m_lock.lockForRead();
     query.exec(existTable);
     m_lock.unlock();
@@ -101,7 +100,7 @@ QJsonObject MessageDataManager::readMessage(const QString &fromId, int id)
         return QJsonObject();
     }
 
-    QString readComd("select messagebody from " + fromId + "message where id = " + QString::number(id) + ";");
+    QString readComd("select messagebody from \"" + fromId + "message\" where id = " + QString::number(id) + ";");
     m_lock.lockForRead();
     query.exec(readComd);
     m_lock.unlock();
@@ -117,7 +116,7 @@ QJsonArray MessageDataManager::readAllMessage(const QString &fromId)
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString existTable("show tables like " + fromId + "message;");
+    QString existTable("show tables like \"" + fromId + "message\";");
     m_lock.lockForRead();
     query.exec(existTable);
     m_lock.unlock();
@@ -127,7 +126,7 @@ QJsonArray MessageDataManager::readAllMessage(const QString &fromId)
         return QJsonArray();
     }
 
-    QString readComd("select messagebody from " + fromId + "message;");
+    QString readComd("select messagebody from \"" + fromId + "message\";");
     m_lock.lockForRead();
     query.exec(readComd);
     m_lock.unlock();

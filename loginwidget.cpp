@@ -35,6 +35,7 @@ void LoginWidget::loginResponse()
     {
         MainWidget* widget = new MainWidget(responseBody);
         widget->setAttribute(Qt::WA_DeleteOnClose);
+        widget->move(1100, 200);
         widget->show();
         this->close();
     }
