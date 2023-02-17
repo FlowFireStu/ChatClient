@@ -35,6 +35,8 @@ private:
 
     void initMainWidget();
     void initFriendList(const QJsonArray& arr);
+    void requestOfflineMessage();
+    void loadOfflineMessage();
     void openChatWidget(const QString& id, const QString& name);
     void showAddFriendDialog();
     void addFriend(QJsonObject infomation);

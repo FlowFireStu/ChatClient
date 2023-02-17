@@ -21,7 +21,9 @@ MainWidget::MainWidget(const QJsonObject& json) :
     QJsonArray friendArray= json.value("friend").toArray();
     m_friendCount = friendArray.count();
     initFriendList(friendArray);
+    requestOfflineMessage();
 
+    connect(Notice::getInstance(), &Notice::offlineMessageResponse, this, &MainWidget::loadOfflineMessage);
     connect(Notice::getInstance(), &Notice::receiveMessageRequest, this, &MainWidget::receiveMessage);
 }
 
@@ -56,6 +58,43 @@ void MainWidget::initFriendList(const QJsonArray& arr)
     m_friendListLayout->addWidget(item);
     m_friendListLayout->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Expanding,QSizePolicy::Expanding));
     connect(item, &AccountItem::clicked, this, &MainWidget::showAddFriendDialog);
+}
+
+void MainWidget::requestOfflineMessage()
+{
+    QJsonObject head;
+    head.insert("type", "request");
+    head.insert("requestType", "GetOfflineMessage");
+    QJsonObject body;
+    body.insert("id", m_self->id());
+    QJsonArray arr;
+    arr.append(head);
+    arr.append(body);
+
+    m_socketManager->write(arr);
+}
+
+void MainWidget::loadOfflineMessage()
+{
+    QJsonArray arr = m_socketManager->readBody().value("offlineMessage").toArray();
+
+    for (auto it = arr.begin(); it != arr.end(); it++)
+    {
+        QJsonObject messageBody = it->toObject();
+        QString fromId = messageBody.value("fromId").toString();
+
+        AccountItem* item = m_itemMap.value(fromId, nullptr);
+        if (!item)
+        {
+            item = insertFriendItem(fromId, "id: " + fromId);
+        }
+
+        m_messageManager->addMessage(fromId, messageBody);
+        item->setCount(item->count() + 1);
+        m_friendListLayout->removeWidget(item);
+        m_friendListLayout->insertWidget(0, item);
+    }
+
 }
 
 void MainWidget::openChatWidget(const QString &id, const QString &name)
@@ -98,8 +137,7 @@ void MainWidget::addFriend(QJsonObject infomation)
 
 void MainWidget::receiveMessage()
 {
-    TcpSocketManager* socketManager = TcpSocketManager::getInstance();
-    QJsonObject messageBody = socketManager->readBody();
+    QJsonObject messageBody = m_socketManager->readBody();
     QString fromId = messageBody.value("fromId").toString();
 
     AccountItem* item = m_itemMap.value(fromId, nullptr);

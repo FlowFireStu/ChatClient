@@ -55,4 +55,7 @@ void Notice::responseNotify(const QString &responseType)
     else if (responseType == "AddFriend") {
         emit addFriendResponse();
     }
+    else if (responseType == "GetOfflineMessage") {
+        emit offlineMessageResponse();
+    }
 }

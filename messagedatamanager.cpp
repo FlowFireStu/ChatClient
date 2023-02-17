@@ -42,23 +42,26 @@ int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &mes
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString addMessageTable("create table if not exists \""
+    QString addMessageTable("create table if not exists messageWith"
                             + fromId +
-                            "message\"(id int, "
-                            "messagebody varchar(1000));");
-    QString getId("select id from \"" + fromId + "message\";");
-
+                            "(messageId int primary key, "
+                            "time varchar(20),"
+                            "fromId varchar(20),"
+                            "toId varchar(20),"
+                            "content varchar(1000));");
     m_lock.lockForWrite();
     query.exec(addMessageTable);
-    query.exec(getId);
+    m_lock.unlock();
+
+    m_lock.lockForRead();
+    query.exec("select messageId from messageWith" + fromId + ";");
     m_lock.unlock();
 
     if (query.size() > 100)
     {
         query.first();
-        int id = query.value(0).toInt();
         m_lock.lockForWrite();
-        query.exec("delete from \"" + fromId + "message\" where id = " + QString::number(id));
+        query.exec("delete from messageWith" + fromId + " where messageId = " + query.value(0).toString());
         m_lock.unlock();
     }
 
@@ -68,14 +71,17 @@ int MessageDataManager::addMessage(const QString &fromId, const QJsonObject &mes
         id = (query.value(0).toInt() + 1) % 100;
     }
 
-    QString messageStr = QJsonDocument(message).toVariant().toString();
-    QString addMessage("insert into \"" + fromId + "message\" values( "
-                       + QString::number(id) + ", \""
-                       + messageStr + "\");");
-    m_database.open();
+    query.prepare("insert into messageWith" + fromId +
+                  " values(:messageId, :time, :fromId, :toId, :content);");
+    query.bindValue(":messageId", id);
+    query.bindValue(":time", message.value("time").toString());
+    query.bindValue(":fromId", message.value("fromId").toString());
+    query.bindValue(":toId", message.value("toId").toString());
+    query.bindValue(":content", message.value("content").toString());
     m_lock.lockForWrite();
-    query.exec(addMessage);
+    query.exec();
     m_lock.unlock();
+
     m_database.close();
     return id;
 }
@@ -90,23 +96,29 @@ QJsonObject MessageDataManager::readMessage(const QString &fromId, int id)
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString existTable("show tables like \"" + fromId + "message\";");
+    QString existTable("show tables like messageWith" + fromId + ";");
     m_lock.lockForRead();
     query.exec(existTable);
     m_lock.unlock();
 
     if (query.size() == 0)
     {
+        m_database.close();
         return QJsonObject();
     }
 
-    QString readComd("select messagebody from \"" + fromId + "message\" where id = " + QString::number(id) + ";");
+    QString readComd("select * from messageWith" + fromId + " where id = " + QString::number(id) + ";");
     m_lock.lockForRead();
     query.exec(readComd);
     m_lock.unlock();
-    query.next();
 
-    QJsonObject messageBody = query.value(0).toJsonObject();
+    query.next();
+    QJsonObject messageBody;
+    messageBody.insert("time", query.value(1).toString());
+    messageBody.insert("fromId", query.value(2).toString());
+    messageBody.insert("toId", query.value(3).toString());
+    messageBody.insert("content", query.value(4).toString());
+
     m_database.close();
     return messageBody;
 }
@@ -116,27 +128,33 @@ QJsonArray MessageDataManager::readAllMessage(const QString &fromId)
     m_database.open();
     QSqlQuery query(m_database);
 
-    QString existTable("show tables like \"" + fromId + "message\";");
+    QString existTable("show tables like messageWith" + fromId + ";");
     m_lock.lockForRead();
     query.exec(existTable);
     m_lock.unlock();
 
     if (query.size() == 0)
     {
+        m_database.close();
         return QJsonArray();
     }
 
-    QString readComd("select messagebody from \"" + fromId + "message\";");
+    QString readMessage("select * from messageWith" + fromId + ";");
     m_lock.lockForRead();
-    query.exec(readComd);
+    query.exec(readMessage);
     m_lock.unlock();
 
-    QJsonArray arr;
+    QJsonObject messageBody;
+    QJsonArray messageArray;
     while (query.next())
     {
-        arr.append(query.value(0).toJsonObject());
+        messageBody.insert("time", query.value(1).toString());
+        messageBody.insert("fromId", query.value(2).toString());
+        messageBody.insert("toId", query.value(3).toString());
+        messageBody.insert("content", query.value(4).toString());
+        messageArray.append(messageBody);
     }
 
     m_database.close();
-    return arr;
+    return messageArray;
 }

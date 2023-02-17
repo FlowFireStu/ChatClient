@@ -31,6 +31,7 @@ signals:
     void createResponse();
     void addFriendResponse();
     void receiveMessageRequest();
+    void offlineMessageResponse();
 
 };
 
